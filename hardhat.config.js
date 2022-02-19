@@ -10,7 +10,7 @@ module.exports = {
   networks: {
     // local
     hardhat: {
-      chain: 1337,
+      chain: 31337,
     },
     mumbai: {
       url: `https://polygon-mumbai.infura.io/v3/${projectId}`,

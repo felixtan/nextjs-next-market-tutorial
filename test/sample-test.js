@@ -1,4 +1,4 @@
-const { expect } = require("chai");
+const { assert } = require("chai");
 const { ethers } = require("hardhat");
 
 /**
@@ -30,11 +30,17 @@ describe("NFTMarket", function () {
     // returns a BigNumber representation of value, parsed with ether units
     const auctionPrice = ethers.utils.parseUnits('100', 'ether');
 
-    // place 2 nfts on market for sale
+    // create 2 nfts
     await nft.createToken('https://www.mytokenlocation.com');
-    await nft.createToken('https://www.mytokenlocation2.com');
+    let createTokenTxn = await nft.createToken('https://www.mytokenlocation2.com');
+    createTokenTxn = await createTokenTxn.wait()
+    assert(createTokenTxn.events.length > 0, 'events emitted')
+
+    // place 2 nfts on market for sale
     await market.createMarketItem(nftContractAddress, 1, auctionPrice, { value: listingPrice });
-    await market.createMarketItem(nftContractAddress, 2, auctionPrice, { value: listingPrice });
+    let createMarketItemTxn = await market.createMarketItem(nftContractAddress, 2, auctionPrice, { value: listingPrice });
+    createMarketItemTxn = await createMarketItemTxn.wait()
+    assert(createMarketItemTxn.events.length > 0, 'events emitted')
 
     // test addresses
     // A Signer in ethers is an abstraction of an Ethereum Account, 
@@ -45,7 +51,18 @@ describe("NFTMarket", function () {
     // sell an item
     await market.connect(buyerAddress).sellMarketItem(nftContractAddress, 1, { value: auctionPrice });
 
-    const items = await market.fetchMarketItems();
+    let items = await market.fetchMarketItems();
+
+    items = await Promise.all(items.map(async i => {
+      const tokenUri = await nft.tokenURI(i.tokenId)
+      return {
+        price: i.price.toString(),
+        tokenId: i.tokenId.toString(),
+        seller: i.seller,
+        owner: i.owner,
+        tokenUri
+      }
+    }))
 
     console.log('items', items)
   });
